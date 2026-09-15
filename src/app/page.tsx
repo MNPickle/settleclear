@@ -1,61 +1,117 @@
 import { Uploader } from "@/components/Uploader";
 
-const withouts = [
-  "No Stripe OAuth",
-  "Books stay in your browser",
-  "No Excel archaeology",
-  "No bookkeeper hour",
-  "First file is full — not a teaser",
-];
+/** Real rows from public/fixtures/stripe-payout-sample.csv (key columns only). */
+const stripeBeforeRows = [
+  {
+    category: "charge",
+    description: "Payment from Acme Co — Invoice INV-1042",
+    gross: "500.00",
+    fee: "14.80",
+    net: "485.20",
+  },
+  {
+    category: "charge",
+    description: "Payment from Bright Labs",
+    gross: "299.00",
+    fee: "8.97",
+    net: "290.03",
+  },
+  {
+    category: "charge",
+    description: "Payment from Cedar Studio",
+    gross: "175.50",
+    fee: "5.39",
+    net: "170.11",
+  },
+  {
+    category: "charge",
+    description: "Payment from Delta LLC",
+    gross: "88.00",
+    fee: "2.85",
+    net: "85.15",
+  },
+  {
+    category: "refund",
+    description: "Refund to Acme Co — INV-1042 partial",
+    gross: "-50.00",
+    fee: "0.00",
+    net: "-50.00",
+  },
+  {
+    category: "charge",
+    description: "Payment from Echo Inc",
+    gross: "120.00",
+    fee: "3.78",
+    net: "116.22",
+  },
+] as const;
 
-const steps = [
+/**
+ * Real output of processStripeCsvText → toQboJournalCsv on the fixture
+ * (see src/__tests__/fixture-journal.test.ts).
+ */
+const qboAfterRows = [
   {
-    n: "1",
-    title: "Export from Stripe",
-    body: "Download the itemized payout reconciliation CSV for the deposit that won’t match. We walk you through it.",
+    journalNo: "SC-xSandbox0001",
+    journalDate: "2026-03-15",
+    accountName: "Bank - Stripe Payouts",
+    debits: "1096.71",
+    credits: "",
+    description: "Stripe deposit po_1NqR2xSandbox0001 2026-03-15",
   },
   {
-    n: "2",
-    title: "Drop it in SettleClear",
-    body: "We parse gross, fees, refunds, and net in your browser — your books never leave your machine.",
+    journalNo: "SC-xSandbox0001",
+    journalDate: "2026-03-15",
+    accountName: "Stripe Processing Fees",
+    debits: "35.79",
+    credits: "",
+    description: "Stripe fees for po_1NqR2xSandbox0001",
   },
   {
-    n: "3",
-    title: "Import & explain",
-    body: "Download QBO + Xero journal CSVs and a plain-English “why this deposit is $X” story that ties to the bank.",
+    journalNo: "SC-xSandbox0001",
+    journalDate: "2026-03-15",
+    accountName: "Sales Returns and Refunds",
+    debits: "50.00",
+    credits: "",
+    description: "Stripe refunds in po_1NqR2xSandbox0001",
   },
-];
+  {
+    journalNo: "SC-xSandbox0001",
+    journalDate: "2026-03-15",
+    accountName: "Stripe Sales",
+    debits: "",
+    credits: "1182.50",
+    description: "Stripe charges settled in po_1NqR2xSandbox0001",
+  },
+] as const;
 
 const faqs = [
   {
-    q: "Is SettleClear a substitute for my CPA?",
-    a: "No. SettleClear helps you see why a Stripe deposit is a certain amount and drafts a journal CSV you can map to your chart of accounts. Accuracy is best-effort against Stripe’s reported gross/fee/net — it is not CPA advice, tax advice, or an audit. Always verify totals against your bank deposit before posting.",
+    q: "Is this CPA advice?",
+    a: "No. SettleClear drafts an import-ready journal from Stripe’s gross/fee/net. Map account names to your chart of accounts and verify the bank deposit before posting.",
   },
   {
-    q: "What’s free vs SettleClear Membership?",
-    a: "Free: one full conversion in this browser (real journal + explanation — not a teaser). Membership: $12/mo for ongoing payouts, cancel anytime on Gumroad. Optional one-file unlock ($4) may be offered when available — primary offer is membership.",
+    q: "What’s free vs membership?",
+    a: "Free: one full conversion in this browser (real QBO + Xero journals). Membership: $12/mo for ongoing payouts — cancel anytime on Gumroad.",
   },
   {
-    q: "Will the journal net match Stripe’s reported deposit?",
-    a: "On the public sample, the deposit nets to $1,096.71 (worked example — not a price). On paid use: if Stripe changes export columns or a journal doesn’t net to Stripe’s reported deposit, we fix the parsers and iterate with you — not a fake money-back guarantee.",
+    q: "Does the journal match the bank?",
+    a: "On the public sample, deposit net is $1,096.71 (sample deposit net — not a price). We aim for journals that net to Stripe’s reported deposit; if Stripe changes columns, we fix parsers.",
   },
   {
-    q: "Can I cancel anytime?",
-    a: "Yes. Cancel or manage billing on Gumroad anytime. Access continues through the period you already paid; no annual lock-in.",
+    q: "Do you connect to Stripe?",
+    a: "No OAuth, no sync. Upload a CSV; processing stays in the browser.",
   },
   {
-    q: "Do you connect to Stripe or store my books?",
-    a: "No Stripe OAuth, no sync, no cloud ledger. Upload a CSV; processing stays in the browser. We are not an AI bookkeeper.",
-  },
-  {
-    q: "QuickBooks Online and Xero both work?",
-    a: "Yes. Every successful conversion downloads a QBO-friendly journal CSV and a Xero-friendly journal CSV. Map accounts to your COA before posting.",
-  },
-  {
-    q: "What currencies are supported?",
-    a: "USD-first. Other currencies will convert/parse as numbers and show a warning — review carefully before importing.",
+    q: "QuickBooks and Xero?",
+    a: "Yes — QBO journal CSV plus a Xero journal CSV on every successful run.",
   },
 ];
+
+function shortDesc(s: string, max = 36) {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 1) + "…";
+}
 
 export default function Home() {
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -86,249 +142,181 @@ export default function Home() {
               href="#upload"
               className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
             >
-              Fix this deposit
+              Try sample
             </a>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 pb-28">
-        {/* —— HERO: problem first, then offer —— */}
-        <section className="pb-8 pt-6 sm:pb-10 sm:pt-10">
-          <div className="rounded-3xl bg-gradient-to-br from-rose-50 via-white to-amber-50 p-6 ring-1 ring-rose-100 sm:p-10">
-            <p className="text-sm font-semibold text-rose-800">
-              For SaaS founders, solos & bookkeepers
+        {/* —— HERO (tight) —— */}
+        <section className="pb-6 pt-8 sm:pb-8 sm:pt-12">
+          <p className="text-sm font-semibold text-emerald-800">
+            For founders & bookkeepers reconciling Stripe
+          </p>
+          <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl sm:leading-[1.08]">
+            Stripe hit your bank. QuickBooks still doesn’t match.
+          </h1>
+          <p className="mt-4 max-w-xl text-base text-slate-600 sm:text-lg">
+            Turn one payout CSV into an import-ready journal that ties to the
+            deposit.
+          </p>
+          <div className="mt-6">
+            <a
+              href="#upload"
+              className="inline-flex rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+            >
+              Try sample / Fix this deposit
+            </a>
+          </div>
+        </section>
+
+        {/* —— PROBLEM (one breath) —— */}
+        <section className="mb-10">
+          <div className="rounded-2xl bg-rose-50 px-5 py-4 ring-1 ring-rose-100 sm:px-6">
+            <p className="text-base font-medium text-rose-950 sm:text-lg">
+              One bank deposit. Dozens of CSV rows. Match fails.
             </p>
-
-            <h1 className="mt-3 max-w-3xl text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl sm:leading-[1.1]">
-              Stripe hit your bank. QuickBooks (or Xero) still doesn’t match.
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-base text-slate-700 sm:text-lg">
-              Bank shows one Stripe deposit. Your books show sales that won’t
-              match it 1:1 — fees and refunds are buried in the payout file.
-              That reconciliation gap is the problem. SettleClear turns the
-              Stripe CSV into a plain-English tie-out plus import-ready QBO +
-              Xero journals so the deposit matches.
-            </p>
-
-            <ul className="mt-5 flex max-w-2xl flex-wrap gap-2">
-              {withouts.map((w) => (
-                <li
-                  key={w}
-                  className="rounded-full border border-white bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm sm:text-sm"
-                >
-                  ✓ {w}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href="#upload"
-                className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
-              >
-                Try sample / Fix this deposit
-              </a>
-              <a
-                href="#sample-results"
-                className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-              >
-                See before → after sample
-              </a>
-            </div>
-
-            <p className="mt-4 text-sm text-slate-600">
-              Membership is{" "}
-              <strong className="text-slate-900">$12/mo</strong> (cancel anytime)
-              · free first file is full output ·{" "}
-              <a
-                href={`${base}/docs/export-from-stripe/`}
-                className="font-medium text-emerald-700 underline-offset-2 hover:underline"
-              >
-                how export works
-              </a>
+            <p className="mt-1 text-sm text-rose-900/75">
+              Fees and refunds hide in the payout file — so sales on the books
+              never equal the bank line.
             </p>
           </div>
         </section>
 
-        {/* —— BEFORE / AFTER SAMPLE —— */}
-        <section id="sample-results" className="mb-12">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                Worked example — public fixture
+        {/* —— BEFORE / AFTER TABLES —— */}
+        <section id="sample-results" className="mb-14 space-y-8">
+          {/* BEFORE */}
+          <div className="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-sm">
+            <div className="border-b border-rose-100 bg-rose-50 px-4 py-3 sm:px-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-rose-800">
+                Before
               </p>
-              <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                Why bank match fails — then how it ties
-              </h2>
-            </div>
-            <p className="rounded-full bg-slate-200/80 px-3 py-1 text-xs font-semibold text-slate-700">
-              Sample deposit net (not a price)
-            </p>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            {/* BEFORE — reconciliation mismatch */}
-            <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 shadow-sm sm:p-6">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-rose-900">
-                  Before — bank ≠ books
-                </h3>
-                <span className="rounded bg-rose-200/80 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-900">
-                  Won’t match
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-rose-900/80">
-                Same payout week: one bank deposit vs sales on the books that
-                don’t line up 1:1.
-              </p>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="overflow-hidden rounded-xl border border-rose-200 bg-white text-sm">
-                  <div className="border-b border-rose-100 bg-rose-100/50 px-3 py-2 text-xs font-semibold text-rose-950">
-                    Bank / Stripe payout
-                  </div>
-                  <div className="px-3 py-4">
-                    <p className="text-xs text-slate-500">One deposit line</p>
-                    <p className="mt-1 font-mono text-2xl font-bold text-slate-900">
-                      $1,096.71
-                    </p>
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      Sample deposit net — not a price
-                    </p>
-                  </div>
-                </div>
-
-                <div className="overflow-hidden rounded-xl border border-amber-200 bg-white text-sm">
-                  <div className="border-b border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">
-                    Books / sales side
-                  </div>
-                  <ul className="divide-y divide-amber-50 px-3 py-1 font-mono text-xs">
-                    <li className="flex justify-between py-1.5">
-                      <span className="truncate text-slate-600">Acme</span>
-                      <span>$500.00</span>
-                    </li>
-                    <li className="flex justify-between py-1.5">
-                      <span className="truncate text-slate-600">Bright Labs</span>
-                      <span>$299.00</span>
-                    </li>
-                    <li className="flex justify-between py-1.5">
-                      <span className="truncate text-slate-600">Cedar + Delta + Echo</span>
-                      <span>$383.50</span>
-                    </li>
-                    <li className="flex justify-between py-1.5 text-rose-700">
-                      <span className="truncate">Refund (Acme)</span>
-                      <span>−$50.00</span>
-                    </li>
-                    <li className="flex justify-between border-t border-amber-100 py-2 font-sans text-xs">
-                      <span className="font-semibold text-amber-950">
-                        Sales / gross
-                      </span>
-                      <span className="font-bold text-amber-950">$1,132.50</span>
-                    </li>
-                  </ul>
-                  <p className="border-t border-amber-100 bg-amber-50/60 px-3 py-1.5 text-[10px] text-amber-900/80">
-                    Fees ($35.79) sit in the payout file — not on the bank line.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-3 rounded-lg border-2 border-rose-400 bg-rose-100 px-3 py-2.5 text-sm font-semibold text-rose-950">
-                Bank $1,096.71 ≠ Books/sales $1,132.50 — won’t match 1:1
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-rose-900/85">
-                This is why QBO/Xero bank match fails — and why you end up in
-                Excel hunting fees and refunds.
+              <p className="mt-0.5 text-sm font-medium text-rose-950">
+                What Stripe actually exports (itemized payout CSV).
               </p>
             </div>
-
-            {/* AFTER — deposit ties; journal secondary */}
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm sm:p-6">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-emerald-900">
-                  After — same deposit ties
-                </h3>
-                <span className="rounded bg-emerald-200/80 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-900">
-                  Matches bank
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2.5 sm:px-4">reporting_category</th>
+                    <th className="px-3 py-2.5 sm:px-4">description</th>
+                    <th className="px-3 py-2.5 text-right sm:px-4">gross</th>
+                    <th className="px-3 py-2.5 text-right sm:px-4">fee</th>
+                    <th className="px-3 py-2.5 text-right sm:px-4">net</th>
+                  </tr>
+                </thead>
+                <tbody className="font-mono text-xs sm:text-sm">
+                  {stripeBeforeRows.map((row) => (
+                    <tr
+                      key={row.description}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      <td className="px-3 py-2 text-slate-700 sm:px-4">
+                        {row.category}
+                      </td>
+                      <td
+                        className="max-w-[14rem] truncate px-3 py-2 text-slate-800 sm:px-4"
+                        title={row.description}
+                      >
+                        {shortDesc(row.description)}
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-800 sm:px-4">
+                        {row.gross}
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-600 sm:px-4">
+                        {row.fee}
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold text-slate-900 sm:px-4">
+                        {row.net}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t border-rose-100 bg-rose-50/80 px-4 py-3 sm:px-5">
+              <p className="text-sm text-rose-950">
+                Bank = one deposit = sum of net{" "}
+                <span className="font-mono font-bold">$1,096.71</span>
+                <span className="ml-2 text-xs font-medium text-rose-800/80">
+                  sample deposit net — not a price
                 </span>
-              </div>
-              <p className="mt-2 text-sm text-emerald-900/80">
-                One bank deposit, explained in plain English — then optional
-                import lines so QBO/Xero can post it.
               </p>
-
-              <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
-                  Why the bank shows this amount
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-800">
-                  Charges{" "}
-                  <span className="font-semibold">$1,182.50</span>
-                  {" − "}
-                  refund{" "}
-                  <span className="font-semibold">$50.00</span>
-                  {" − "}
-                  fees{" "}
-                  <span className="font-semibold">$35.79</span>
-                  {" = "}
-                  <span className="font-bold text-emerald-800">
-                    deposit $1,096.71
-                  </span>
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Same math: gross $1,132.50 − fees $35.79 ={" "}
-                  <strong className="text-slate-700">$1,096.71</strong> sample
-                  deposit net (not a price).
-                </p>
-                <div className="mt-3 flex items-center justify-between rounded-lg bg-emerald-100/80 px-3 py-2">
-                  <span className="text-sm font-medium text-emerald-950">
-                    Bank deposit now ties
-                  </span>
-                  <span className="font-mono text-lg font-bold text-emerald-950">
-                    $1,096.71 ✓
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-3 overflow-hidden rounded-xl border border-emerald-100 bg-white/80">
-                <p className="border-b border-emerald-50 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700/90">
-                  What QBO/Xero import looks like
-                  <span className="ml-1 font-normal normal-case tracking-normal text-slate-500">
-                    (secondary — map to your accounts)
-                  </span>
-                </p>
-                <ul className="divide-y divide-emerald-50/80 px-3 py-1 text-[11px] text-slate-600">
-                  <li className="flex justify-between py-1">
-                    <span>Bank — Stripe payouts</span>
-                    <span className="font-mono">+$1,096.71</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span>Processing fees</span>
-                    <span className="font-mono">+$35.79</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span>Refunds</span>
-                    <span className="font-mono">+$50.00</span>
-                  </li>
-                  <li className="flex justify-between py-1">
-                    <span>Sales</span>
-                    <span className="font-mono">−$1,182.50</span>
-                  </li>
-                </ul>
-                <p className="border-t border-emerald-100 bg-emerald-50/50 px-3 py-1.5 text-[11px] text-emerald-900">
-                  Net = bank deposit <strong>$1,096.71</strong> — import-ready so
-                  the deposit matches.
-                </p>
-              </div>
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-sm text-slate-100">
+          {/* AFTER */}
+          <div className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
+            <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 sm:px-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                After
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-emerald-950">
+                Import-ready journal CSV — map account names to your chart of
+                accounts, then import into QuickBooks (Xero file also
+                available).
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2.5 sm:px-4">JournalNo</th>
+                    <th className="px-3 py-2.5 sm:px-4">JournalDate</th>
+                    <th className="px-3 py-2.5 sm:px-4">AccountName</th>
+                    <th className="px-3 py-2.5 text-right sm:px-4">Debits</th>
+                    <th className="px-3 py-2.5 text-right sm:px-4">Credits</th>
+                    <th className="px-3 py-2.5 sm:px-4">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="font-mono text-xs sm:text-sm">
+                  {qboAfterRows.map((row) => (
+                    <tr
+                      key={row.accountName}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      <td className="whitespace-nowrap px-3 py-2 text-slate-600 sm:px-4">
+                        {row.journalNo}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 text-slate-600 sm:px-4">
+                        {row.journalDate}
+                      </td>
+                      <td className="px-3 py-2 font-sans text-sm font-medium text-slate-900 sm:px-4">
+                        {row.accountName}
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-800 sm:px-4">
+                        {row.debits}
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-800 sm:px-4">
+                        {row.credits}
+                      </td>
+                      <td
+                        className="max-w-[12rem] truncate px-3 py-2 text-slate-500 sm:px-4"
+                        title={row.description}
+                      >
+                        {shortDesc(row.description, 32)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t border-emerald-100 bg-emerald-50/80 px-4 py-3 sm:px-5">
+              <p className="text-sm text-emerald-950">
+                Balanced to bank deposit{" "}
+                <span className="font-mono font-bold">$1,096.71</span>
+                <span className="ml-2 text-xs font-medium text-emerald-800/80">
+                  sample deposit net — not a price · Xero CSV also available
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-sm text-slate-100">
             <p className="flex-1">
-              Load the same fixture below — download full{" "}
-              <strong>QBO</strong> and <strong>Xero</strong> journals (not a
-              teaser).
+              Run the same fixture below — download full QBO and Xero journals.
             </p>
             <a
               href="#upload"
@@ -340,137 +328,68 @@ export default function Home() {
               href={`${base}/docs/export-from-stripe/`}
               className="rounded-xl border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700"
             >
-              How to export from Stripe
+              How to export
             </a>
-          </div>
-        </section>
-
-        {/* —— WHAT YOU GET (offer after problem) —— */}
-        <section className="mb-12 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-emerald-700 p-5 text-white shadow-sm sm:col-span-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
-              What you get
-            </p>
-            <h2 className="mt-2 text-xl font-bold">
-              Journals that tie to the bank — plus the story
-            </h2>
-            <p className="mt-2 text-sm text-emerald-50/95">
-              Upload one Stripe payout CSV. Download QBO + Xero journals and a
-              fee/refund explanation — without connecting Stripe or uploading
-              your books.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">QBO journal CSV</p>
-            <p className="mt-1 text-sm text-slate-600">
-              Debit bank + fees + refunds; credit sales — map to your chart of
-              accounts.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">Xero journal CSV</p>
-            <p className="mt-1 text-sm text-slate-600">
-              Same balanced lines in Xero manual-journal shape — not QBO-only.
-            </p>
-          </div>
-        </section>
-
-        {/* —— HOW IT WORKS —— */}
-        <section id="how" className="mb-14">
-          <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 sm:p-8">
-            <h2 className="text-center text-2xl font-bold text-slate-900">
-              How it works
-            </h2>
-            <p className="mx-auto mt-2 max-w-xl text-center text-sm text-slate-600">
-              Three steps. One upload. Output that supports the bank deposit —
-              not a product tour.
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {steps.map((s) => (
-                <div
-                  key={s.n}
-                  className="rounded-2xl border border-slate-100 bg-slate-50 p-5"
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-800">
-                    {s.n}
-                  </div>
-                  <h3 className="mt-3 font-semibold text-slate-900">{s.title}</h3>
-                  <p className="mt-1 text-sm text-slate-600">{s.body}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
         {/* —— UPLOADER —— */}
         <Uploader />
 
-        {/* —— PRICING —— */}
-        <section id="pricing" className="mx-auto mt-16 max-w-4xl">
+        {/* —— PRICING (short) —— */}
+        <section id="pricing" className="mx-auto mt-16 max-w-3xl">
           <h2 className="text-center text-2xl font-bold text-slate-900">
             Pricing
           </h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-slate-600">
-            Cheaper than one bookkeeper hour spent hunting fees in Excel. Cancel
-            membership anytime.
-          </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
                 Free
               </p>
               <p className="mt-1 text-3xl font-bold text-slate-900">1 file</p>
               <p className="mt-2 text-sm text-slate-600">
-                One full conversion in this browser — real QBO + Xero journals
-                and the deposit explanation. Not a watermarked teaser.
+                Full QBO + Xero journals in this browser — not a teaser.
               </p>
               <a
                 href="#upload"
                 className="mt-5 inline-flex rounded-xl border border-emerald-600 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
               >
-                Try sample / Fix this deposit
+                Try sample
               </a>
             </div>
             <div className="rounded-2xl border-2 border-emerald-600 bg-emerald-50/40 p-6 shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
-                SettleClear Membership
+                Membership
               </p>
               <p className="mt-1 text-3xl font-bold text-slate-900">
                 $12<span className="text-lg font-semibold">/mo</span>
               </p>
               <p className="mt-2 text-sm text-slate-700">
-                Every future payout explained + import-ready journals. Cancel
-                anytime. Optional $4 one-file unlock may appear on the product
-                page when available — membership is the main path.
+                Ongoing payouts. Cancel anytime on Gumroad.
               </p>
-              <ul className="mt-3 space-y-1.5 text-sm text-slate-700">
-                <li>✓ Ongoing conversions after your free file</li>
-                <li>✓ Parser updates when Stripe exports change</li>
-                <li>✓ vs. bookkeeper time / spreadsheet archaeology</li>
-              </ul>
               <a
                 href="https://craftingwithdonna.gumroad.com/l/settleclear"
                 target="_blank"
                 rel="noreferrer"
                 className="mt-5 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
               >
-                Get SettleClear Membership — $12/mo
+                Get Membership — $12/mo
               </a>
             </div>
           </div>
         </section>
 
-        {/* —— FAQ —— */}
+        {/* —— FAQ (short) —— */}
         <section className="mx-auto mt-16 max-w-3xl">
           <h2 className="text-center text-2xl font-bold text-slate-900">FAQ</h2>
-          <dl className="mt-6 space-y-4">
+          <dl className="mt-6 space-y-3">
             {faqs.map((f) => (
               <div
                 key={f.q}
                 className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
                 <dt className="font-semibold text-slate-900">{f.q}</dt>
-                <dd className="mt-2 text-sm leading-relaxed text-slate-600">
+                <dd className="mt-1.5 text-sm leading-relaxed text-slate-600">
                   {f.a}
                 </dd>
               </div>
@@ -487,7 +406,7 @@ export default function Home() {
               Stripe deposit ≠ books?
             </span>{" "}
             <span className="hidden sm:inline">
-              Run the sample — full QBO + Xero journal, not a teaser.
+              Run the sample — full journal CSV, not a teaser.
             </span>
           </p>
           <div className="flex flex-wrap gap-2">
@@ -495,7 +414,7 @@ export default function Home() {
               href="#upload"
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
             >
-              Try sample / Fix this deposit
+              Try sample
             </a>
             <a
               href="#pricing"
@@ -510,8 +429,8 @@ export default function Home() {
       <footer className="border-t border-slate-200 bg-white py-8 pb-24 text-center text-xs text-slate-500">
         SettleClear by{" "}
         <span className="font-medium text-slate-700">Vetted Stuff</span> ·
-        File-first payout reconciliation helper · Not a CPA firm · No Stripe
-        OAuth · SettleClear Membership $12/mo, cancel anytime
+        File-first payout reconciliation · Not a CPA firm · No Stripe OAuth ·
+        Membership $12/mo, cancel anytime
       </footer>
     </div>
   );
