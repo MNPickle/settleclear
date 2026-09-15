@@ -1,11 +1,18 @@
 import type { NextConfig } from "next";
 
+const basePath = "/settleclear";
+
 const nextConfig: NextConfig = {
-  // Static HTML for Bluehost / any static host (no Node runtime).
+  // Static HTML for GitHub Pages (project site under /settleclear/).
   output: "export",
+  basePath,
+  assetPrefix: basePath,
   trailingSlash: true,
   images: {
     unoptimized: true,
+  },
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
   },
 };
 

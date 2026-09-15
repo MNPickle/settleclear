@@ -13,7 +13,8 @@ import {
 
 type Status = "idle" | "ready" | "paywall" | "error";
 
-const SAMPLE_CSV_PATH = "/fixtures/stripe-payout-sample.csv";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const SAMPLE_CSV_PATH = `${BASE_PATH}/fixtures/stripe-payout-sample.csv`;
 
 export function Uploader() {
   const [status, setStatus] = useState<Status>("idle");
@@ -119,7 +120,7 @@ export function Uploader() {
         <p className="mt-2 text-xs text-emerald-800/80">
           Always available at{" "}
           <code className="rounded bg-white/70 px-1">
-            /fixtures/stripe-payout-sample.csv
+            {SAMPLE_CSV_PATH}
           </code>
         </p>
       </div>

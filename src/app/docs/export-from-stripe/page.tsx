@@ -53,7 +53,7 @@ export default function ExportDocsPage() {
         </p>
         <h2>Sample fixture</h2>
         <p>
-          <a href="/fixtures/stripe-payout-sample.csv" download>
+          <a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/fixtures/stripe-payout-sample.csv`} download>
             stripe-payout-sample.csv
           </a>{" "}
           — expected deposit total <strong>$1,096.71</strong>.
