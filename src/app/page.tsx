@@ -57,14 +57,6 @@ const faqs = [
   },
 ];
 
-/** Fixture journal lines — same numbers as public sample CSV / vitest. */
-const afterJournal = [
-  { account: "Bank - Stripe Payouts", debit: "1,096.71", credit: "" },
-  { account: "Stripe Processing Fees", debit: "35.79", credit: "" },
-  { account: "Sales Returns and Refunds", debit: "50.00", credit: "" },
-  { account: "Stripe Sales", debit: "", credit: "1,182.50" },
-];
-
 export default function Home() {
   const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -113,10 +105,11 @@ export default function Home() {
             </h1>
 
             <p className="mt-4 max-w-2xl text-base text-slate-700 sm:text-lg">
-              One deposit line. A pile of charges, fees, and refunds that never
-              add up the way sales do. That mismatch is the problem — SettleClear
-              turns the Stripe payout CSV into import-ready QBO + Xero journals
-              plus a plain-English “why Stripe paid $X.”
+              Bank shows one Stripe deposit. Your books show sales that won’t
+              match it 1:1 — fees and refunds are buried in the payout file.
+              That reconciliation gap is the problem. SettleClear turns the
+              Stripe CSV into a plain-English tie-out plus import-ready QBO +
+              Xero journals so the deposit matches.
             </p>
 
             <ul className="mt-5 flex max-w-2xl flex-wrap gap-2">
@@ -167,117 +160,166 @@ export default function Home() {
                 Worked example — public fixture
               </p>
               <h2 className="mt-1 text-2xl font-bold text-slate-900">
-                Before the mismatch vs after SettleClear
+                Why bank match fails — then how it ties
               </h2>
             </div>
             <p className="rounded-full bg-slate-200/80 px-3 py-1 text-xs font-semibold text-slate-700">
-              Example deposit net (not a price)
+              Sample deposit net (not a price)
             </p>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            {/* BEFORE */}
+            {/* BEFORE — reconciliation mismatch */}
             <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 shadow-sm sm:p-6">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold uppercase tracking-wide text-rose-900">
-                  Before — messy payout
+                  Before — bank ≠ books
                 </h3>
                 <span className="rounded bg-rose-200/80 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-900">
-                  Bank ≠ sales
+                  Won’t match
                 </span>
               </div>
               <p className="mt-2 text-sm text-rose-900/80">
-                Simplified Stripe payout view: gross charges, fees, a refund —
-                and one bank line that doesn’t match what you booked as sales.
+                Same payout week: one bank deposit vs sales on the books that
+                don’t line up 1:1.
               </p>
 
-              <div className="mt-4 overflow-hidden rounded-xl border border-rose-200 bg-white text-sm">
-                <div className="border-b border-rose-100 bg-rose-100/50 px-3 py-2 font-semibold text-rose-950">
-                  Stripe payout detail (simplified)
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="overflow-hidden rounded-xl border border-rose-200 bg-white text-sm">
+                  <div className="border-b border-rose-100 bg-rose-100/50 px-3 py-2 text-xs font-semibold text-rose-950">
+                    Bank / Stripe payout
+                  </div>
+                  <div className="px-3 py-4">
+                    <p className="text-xs text-slate-500">One deposit line</p>
+                    <p className="mt-1 font-mono text-2xl font-bold text-slate-900">
+                      $1,096.71
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Sample deposit net — not a price
+                    </p>
+                  </div>
                 </div>
-                <ul className="divide-y divide-rose-50 font-mono text-xs sm:text-sm">
-                  <li className="flex justify-between px-3 py-2">
-                    <span className="text-slate-600">Charges (5)</span>
-                    <span className="text-slate-900">+$1,182.50</span>
-                  </li>
-                  <li className="flex justify-between px-3 py-2">
-                    <span className="text-slate-600">Stripe fees</span>
-                    <span className="text-rose-700">−$35.79</span>
-                  </li>
-                  <li className="flex justify-between px-3 py-2">
-                    <span className="text-slate-600">Refund (Acme partial)</span>
-                    <span className="text-rose-700">−$50.00</span>
-                  </li>
-                  <li className="flex justify-between bg-rose-50/80 px-3 py-2.5 font-sans">
-                    <span className="font-semibold text-rose-950">
-                      Bank deposit line
-                    </span>
-                    <span className="font-bold text-rose-950">$1,096.71</span>
-                  </li>
-                </ul>
+
+                <div className="overflow-hidden rounded-xl border border-amber-200 bg-white text-sm">
+                  <div className="border-b border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-950">
+                    Books / sales side
+                  </div>
+                  <ul className="divide-y divide-amber-50 px-3 py-1 font-mono text-xs">
+                    <li className="flex justify-between py-1.5">
+                      <span className="truncate text-slate-600">Acme</span>
+                      <span>$500.00</span>
+                    </li>
+                    <li className="flex justify-between py-1.5">
+                      <span className="truncate text-slate-600">Bright Labs</span>
+                      <span>$299.00</span>
+                    </li>
+                    <li className="flex justify-between py-1.5">
+                      <span className="truncate text-slate-600">Cedar + Delta + Echo</span>
+                      <span>$383.50</span>
+                    </li>
+                    <li className="flex justify-between py-1.5 text-rose-700">
+                      <span className="truncate">Refund (Acme)</span>
+                      <span>−$50.00</span>
+                    </li>
+                    <li className="flex justify-between border-t border-amber-100 py-2 font-sans text-xs">
+                      <span className="font-semibold text-amber-950">
+                        Sales / gross
+                      </span>
+                      <span className="font-bold text-amber-950">$1,132.50</span>
+                    </li>
+                  </ul>
+                  <p className="border-t border-amber-100 bg-amber-50/60 px-3 py-1.5 text-[10px] text-amber-900/80">
+                    Fees ($35.79) sit in the payout file — not on the bank line.
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-3 rounded-lg border border-dashed border-rose-300 bg-white/70 px-3 py-2 text-xs text-rose-900">
-                <strong>Books side:</strong> sales booked at charge totals → bank
-                shows $1,096.71 → “why doesn’t this match?”
+              <div className="mt-3 rounded-lg border-2 border-rose-400 bg-rose-100 px-3 py-2.5 text-sm font-semibold text-rose-950">
+                Bank $1,096.71 ≠ Books/sales $1,132.50 — won’t match 1:1
               </div>
+              <p className="mt-2 text-xs leading-relaxed text-rose-900/85">
+                This is why QBO/Xero bank match fails — and why you end up in
+                Excel hunting fees and refunds.
+              </p>
             </div>
 
-            {/* AFTER */}
+            {/* AFTER — deposit ties; journal secondary */}
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm sm:p-6">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold uppercase tracking-wide text-emerald-900">
-                  After — import-ready journal
+                  After — same deposit ties
                 </h3>
                 <span className="rounded bg-emerald-200/80 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-900">
-                  QBO + Xero
+                  Matches bank
                 </span>
               </div>
               <p className="mt-2 text-sm text-emerald-900/80">
-                Clean journal lines that{" "}
-                <strong>sum to the sample deposit</strong> — ready to map into
-                QuickBooks Online or Xero.
+                One bank deposit, explained in plain English — then optional
+                import lines so QBO/Xero can post it.
               </p>
 
-              <div className="mt-4 overflow-hidden rounded-xl border border-emerald-200 bg-white text-sm">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-2 border-b border-emerald-100 bg-emerald-100/50 px-3 py-2 text-xs font-semibold text-emerald-950">
-                  <span>Account</span>
-                  <span className="w-16 text-right">Debit</span>
-                  <span className="w-16 text-right">Credit</span>
-                </div>
-                <ul className="divide-y divide-emerald-50 font-mono text-xs sm:text-sm">
-                  {afterJournal.map((row) => (
-                    <li
-                      key={row.account}
-                      className="grid grid-cols-[1fr_auto_auto] gap-2 px-3 py-2"
-                    >
-                      <span className="truncate font-sans text-slate-800">
-                        {row.account}
-                      </span>
-                      <span className="w-16 text-right text-slate-900">
-                        {row.debit || "—"}
-                      </span>
-                      <span className="w-16 text-right text-slate-900">
-                        {row.credit || "—"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="border-t border-emerald-200 bg-emerald-50 px-3 py-2.5 font-sans text-sm">
-                  <p className="text-xs font-medium text-emerald-800">
-                    Sample payout nets to…{" "}
-                    <span className="text-[10px] font-normal text-emerald-700">
-                      (example deposit net — not a price)
-                    </span>
-                  </p>
-                  <p className="text-xl font-bold text-emerald-950">$1,096.71</p>
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                  Why the bank shows this amount
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-800">
+                  Charges{" "}
+                  <span className="font-semibold">$1,182.50</span>
+                  {" − "}
+                  refund{" "}
+                  <span className="font-semibold">$50.00</span>
+                  {" − "}
+                  fees{" "}
+                  <span className="font-semibold">$35.79</span>
+                  {" = "}
+                  <span className="font-bold text-emerald-800">
+                    deposit $1,096.71
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Same math: gross $1,132.50 − fees $35.79 ={" "}
+                  <strong className="text-slate-700">$1,096.71</strong> sample
+                  deposit net (not a price).
+                </p>
+                <div className="mt-3 flex items-center justify-between rounded-lg bg-emerald-100/80 px-3 py-2">
+                  <span className="text-sm font-medium text-emerald-950">
+                    Bank deposit now ties
+                  </span>
+                  <span className="font-mono text-lg font-bold text-emerald-950">
+                    $1,096.71 ✓
+                  </span>
                 </div>
               </div>
 
-              <div className="mt-3 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs leading-relaxed text-emerald-950">
-                <strong>Why Stripe paid $1,096.71:</strong> 5 charges ($1,182.50)
-                − fees ($35.79) − 1 refund ($50.00) → bank deposit $1,096.71.
-                Math check: gross $1,132.50 − fees $35.79 = net $1,096.71.
+              <div className="mt-3 overflow-hidden rounded-xl border border-emerald-100 bg-white/80">
+                <p className="border-b border-emerald-50 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700/90">
+                  What QBO/Xero import looks like
+                  <span className="ml-1 font-normal normal-case tracking-normal text-slate-500">
+                    (secondary — map to your accounts)
+                  </span>
+                </p>
+                <ul className="divide-y divide-emerald-50/80 px-3 py-1 text-[11px] text-slate-600">
+                  <li className="flex justify-between py-1">
+                    <span>Bank — Stripe payouts</span>
+                    <span className="font-mono">+$1,096.71</span>
+                  </li>
+                  <li className="flex justify-between py-1">
+                    <span>Processing fees</span>
+                    <span className="font-mono">+$35.79</span>
+                  </li>
+                  <li className="flex justify-between py-1">
+                    <span>Refunds</span>
+                    <span className="font-mono">+$50.00</span>
+                  </li>
+                  <li className="flex justify-between py-1">
+                    <span>Sales</span>
+                    <span className="font-mono">−$1,182.50</span>
+                  </li>
+                </ul>
+                <p className="border-t border-emerald-100 bg-emerald-50/50 px-3 py-1.5 text-[11px] text-emerald-900">
+                  Net = bank deposit <strong>$1,096.71</strong> — import-ready so
+                  the deposit matches.
+                </p>
               </div>
             </div>
           </div>
