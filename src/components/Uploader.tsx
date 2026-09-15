@@ -148,7 +148,7 @@ export function Uploader() {
           </label>
           <p className="mt-3 text-xs text-slate-500">
             Free: {Math.max(0, 1 - used)} of 1 file remaining this browser.
-            Membership: $12/mo on Gumroad (cancel anytime).
+            SettleClear Membership: $12/mo (cancel anytime).
           </p>
         </div>
       </div>
@@ -159,9 +159,10 @@ export function Uploader() {
             You’ve used your free file
           </h3>
           <p className="mt-2 text-sm text-amber-900/90">
-            Unlock SettleClear membership for $12/mo — cancel anytime on Gumroad.
-            Optional one-file unlock ($4) may appear on the product page when
-            available. No refund theater: try the free sample first.
+            Unlock SettleClear Membership for $12/mo — every future payout
+            explained + journals. Cancel anytime. Optional one-file unlock ($4)
+            may appear on the product page when available. Try the free sample
+            first so you see a real output before paying.
           </p>
           <a
             href={gumroadUrl()}
@@ -169,7 +170,7 @@ export function Uploader() {
             rel="noreferrer"
             className="mt-4 inline-flex rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
           >
-            Unlock on Gumroad — $12/mo
+            Get SettleClear Membership — $12/mo
           </a>
           <p className="mt-3 text-xs text-amber-800/80">
             Last file: {fileName || "(none)"} · localStorage gate only (clear
