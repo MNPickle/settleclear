@@ -97,8 +97,8 @@ export function Uploader() {
           Try sample file
         </h3>
         <p className="mt-1 text-sm text-emerald-900/90">
-          Download the fixture, then upload it (or load it in one click). Expected
-          deposit total: <strong>$1,096.71</strong>.
+          Download the fixture, then upload it (or load it in one click). Sample
+          deposit net (not a price): <strong>$1,096.71</strong>.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <a
