@@ -22,6 +22,6 @@ export function canProcessFree(): boolean {
 export function gumroadUrl(): string {
   return (
     process.env.NEXT_PUBLIC_GUMROAD_URL ||
-    "https://gumroad.com/l/settleclear-placeholder"
+    "https://craftingwithdonna.gumroad.com/l/settleclear"
   );
 }
