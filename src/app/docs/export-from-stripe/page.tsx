@@ -59,7 +59,7 @@ export default function ExportDocsPage() {
           — expected deposit total <strong>$1,096.71</strong>.
         </p>
         <p className="text-sm text-slate-500">
-          Full write-up also lives in the repo at{" "}
+          SettleClear by Vetted Stuff · Full write-up also lives in the repo at{" "}
           <code>docs/export-from-stripe.md</code>.
         </p>
       </article>

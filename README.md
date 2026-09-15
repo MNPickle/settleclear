@@ -2,11 +2,13 @@
 
 **Your Stripe deposit doesn’t match QuickBooks. Fix it in one upload.**
 
-File-first MVP: upload a Stripe payout / balance-transaction CSV → download a QuickBooks Online–friendly journal CSV, a Xero-friendly journal CSV, and a plain-English explanation of why the deposit is $X.
+File-first MVP by **Vetted Stuff**: upload a Stripe payout / balance-transaction CSV → download a QuickBooks Online–friendly journal CSV, a Xero-friendly journal CSV, and a plain-English explanation of why the deposit is $X.
 
 - Parses **in the browser** (no storing user books)
 - **USD-first** (warns on other currencies)
-- Free **1 file** per browser via `localStorage`; 2nd file shows a Gumroad paywall placeholder (`NEXT_PUBLIC_GUMROAD_URL`)
+- Free **1 file** per browser via `localStorage`; 2nd file shows Gumroad paywall (`NEXT_PUBLIC_GUMROAD_URL`)
+- Primary paid offer: **$12/mo** membership (optional $4 one-file when listed)
+- **Static-exportable** (`output: 'export'`) for Bluehost / any static host — no Node required at runtime
 - No Stripe OAuth, sync, multi-platform CRM, or “AI bookkeeper” claims
 
 ## Quick start
@@ -21,13 +23,15 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm test          # vitest — journal net === fixture deposit
-npm run build     # production build
+npm run build     # static export → out/
 ```
+
+Upload `out/` (or `settleclear-site.zip`) to Bluehost / any static host.
 
 ## Fixture deposit total
 
 Sample file: [`public/fixtures/stripe-payout-sample.csv`](public/fixtures/stripe-payout-sample.csv)  
-Served at: [`/fixtures/stripe-payout-sample.csv`](http://localhost:3000/fixtures/stripe-payout-sample.csv)
+Served at: `/fixtures/stripe-payout-sample.csv`
 
 | Metric | Amount |
 | --- | ---: |
@@ -55,8 +59,9 @@ src/components/    # Uploader UI
 public/fixtures/   # Sample Stripe CSV
 docs/              # Export how-to
 src/__tests__/     # Vitest
+out/               # Static export (after npm run build)
 ```
 
 ## License
 
-Private MVP — all rights reserved.
+Private MVP — all rights reserved. SettleClear / Vetted Stuff.

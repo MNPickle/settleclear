@@ -21,15 +21,19 @@ const steps = [
 const faqs = [
   {
     q: "Is SettleClear a substitute for my CPA?",
-    a: "No. SettleClear helps you see why a Stripe deposit is a certain amount and drafts a journal CSV you can map to your chart of accounts. Accuracy is best-effort against Stripe’s reported gross/fee/net — it is not CPA advice, tax advice, or an audit.",
+    a: "No. SettleClear helps you see why a Stripe deposit is a certain amount and drafts a journal CSV you can map to your chart of accounts. Accuracy is best-effort against Stripe’s reported gross/fee/net — it is not CPA advice, tax advice, or an audit. Always verify totals against your bank deposit before posting.",
+  },
+  {
+    q: "What’s free vs paid?",
+    a: "Free: one full conversion in this browser (real journal + explanation — not a teaser). Paid: $12/mo membership for ongoing conversions, cancel anytime on Gumroad. Optional one-file unlock ($4) may be offered when available — primary offer is $12/mo.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. The free tier is one file in this browser (localStorage). Paid unlocks are handled on Gumroad; cancel or manage billing there. There is no SettleClear subscription trap in this MVP.",
+    a: "Yes. Cancel or manage billing on Gumroad anytime. Access continues through the period you already paid; no SettleClear subscription trap and no annual lock-in.",
   },
   {
     q: "What’s your refund policy?",
-    a: "We don’t do refund theater. If Gumroad’s buyer protection applies to a purchase, use Gumroad. This MVP’s free file costs nothing; paid access is a simple unlock link.",
+    a: "No refund theater. Try the free sample file first and confirm the deposit total ties. If Gumroad’s buyer protection applies to a purchase, use Gumroad. We fix parsers when exports change — we don’t do money-back drama after you’ve seen a real output.",
   },
   {
     q: "Do you connect to Stripe or store my books?",
@@ -49,7 +53,10 @@ export default function Home() {
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-sm font-bold text-white">
             SC
           </span>
-          <span className="font-semibold tracking-tight">SettleClear</span>
+          <div className="leading-tight">
+            <span className="font-semibold tracking-tight">SettleClear</span>
+            <span className="ml-2 text-xs text-slate-500">by Vetted Stuff</span>
+          </div>
         </div>
         <a
           href="#upload"
@@ -80,12 +87,23 @@ export default function Home() {
               Fix my deposit
             </a>
             <a
-              href="/docs/export-from-stripe"
+              href="#try-sample"
+              className="rounded-xl border border-emerald-600 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+            >
+              Try sample file
+            </a>
+            <a
+              href="/docs/export-from-stripe/"
               className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
             >
               How to export from Stripe
             </a>
           </div>
+          <p className="mx-auto mt-4 max-w-xl text-sm text-slate-500">
+            New here? Download the sample CSV, drop it below, and expect deposit{" "}
+            <strong className="text-slate-700">$1,096.71</strong> — full journal,
+            not a teaser.
+          </p>
         </section>
 
         <section className="mb-14 grid gap-4 sm:grid-cols-3">
@@ -124,8 +142,10 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
-        SettleClear MVP · File-first payout reconciliation helper · Not a CPA
-        firm · No Stripe OAuth
+        SettleClear by{" "}
+        <span className="font-medium text-slate-700">Vetted Stuff</span> ·
+        File-first payout reconciliation helper · Not a CPA firm · No Stripe
+        OAuth · $12/mo membership, cancel anytime
       </footer>
     </div>
   );

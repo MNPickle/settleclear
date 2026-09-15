@@ -13,21 +13,24 @@ import {
 
 type Status = "idle" | "ready" | "paywall" | "error";
 
+const SAMPLE_CSV_PATH = "/fixtures/stripe-payout-sample.csv";
+
 export function Uploader() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [used, setUsed] = useState(0);
+  const [loadingSample, setLoadingSample] = useState(false);
 
   useEffect(() => {
     setUsed(getFilesUsed());
   }, []);
 
-  const runFile = useCallback(async (file: File) => {
+  const runText = useCallback(async (text: string, name: string) => {
     setError(null);
     setResult(null);
-    setFileName(file.name);
+    setFileName(name);
 
     if (!canProcessFree()) {
       setStatus("paywall");
@@ -36,7 +39,6 @@ export function Uploader() {
     }
 
     try {
-      const text = await file.text();
       const processed = processStripeCsvText(text);
       incrementFilesUsed();
       setUsed(getFilesUsed());
@@ -47,6 +49,14 @@ export function Uploader() {
       setError(e instanceof Error ? e.message : "Could not parse that CSV.");
     }
   }, []);
+
+  const runFile = useCallback(
+    async (file: File) => {
+      const text = await file.text();
+      await runText(text, file.name);
+    },
+    [runText]
+  );
 
   const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,8 +70,60 @@ export function Uploader() {
     if (file) void runFile(file);
   };
 
+  const loadSample = async () => {
+    setLoadingSample(true);
+    setError(null);
+    try {
+      const res = await fetch(SAMPLE_CSV_PATH);
+      if (!res.ok) throw new Error("Could not load sample CSV.");
+      const text = await res.text();
+      await runText(text, "stripe-payout-sample.csv");
+    } catch (e) {
+      setStatus("error");
+      setError(e instanceof Error ? e.message : "Could not load sample CSV.");
+    } finally {
+      setLoadingSample(false);
+    }
+  };
+
   return (
     <section id="upload" className="mx-auto w-full max-w-3xl">
+      <div
+        id="try-sample"
+        className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5"
+      >
+        <h3 className="text-base font-semibold text-emerald-950">
+          Try sample file
+        </h3>
+        <p className="mt-1 text-sm text-emerald-900/90">
+          Download the fixture, then upload it (or load it in one click). Expected
+          deposit total: <strong>$1,096.71</strong>.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            className="inline-flex rounded-xl border border-emerald-700 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-50"
+            href={SAMPLE_CSV_PATH}
+            download="stripe-payout-sample.csv"
+          >
+            Download sample CSV
+          </a>
+          <button
+            type="button"
+            disabled={loadingSample}
+            onClick={() => void loadSample()}
+            className="inline-flex rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+          >
+            {loadingSample ? "Loading…" : "Load sample in browser"}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-emerald-800/80">
+          Always available at{" "}
+          <code className="rounded bg-white/70 px-1">
+            /fixtures/stripe-payout-sample.csv
+          </code>
+        </p>
+      </div>
+
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
@@ -85,15 +147,7 @@ export function Uploader() {
           </label>
           <p className="mt-3 text-xs text-slate-500">
             Free: {Math.max(0, 1 - used)} of 1 file remaining this browser.
-            Try the{" "}
-            <a
-              className="underline"
-              href="/fixtures/stripe-payout-sample.csv"
-              download
-            >
-              sample fixture
-            </a>
-            .
+            Membership: $12/mo on Gumroad (cancel anytime).
           </p>
         </div>
       </div>
@@ -104,8 +158,9 @@ export function Uploader() {
             You’ve used your free file
           </h3>
           <p className="mt-2 text-sm text-amber-900/90">
-            Unlock unlimited conversions on Gumroad. This is a placeholder
-            checkout link for the MVP — no card has been charged by SettleClear.
+            Unlock SettleClear membership for $12/mo — cancel anytime on Gumroad.
+            Optional one-file unlock ($4) may appear on the product page when
+            available. No refund theater: try the free sample first.
           </p>
           <a
             href={gumroadUrl()}
@@ -113,7 +168,7 @@ export function Uploader() {
             rel="noreferrer"
             className="mt-4 inline-flex rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800"
           >
-            Unlock on Gumroad
+            Unlock on Gumroad — $12/mo
           </a>
           <p className="mt-3 text-xs text-amber-800/80">
             Last file: {fileName || "(none)"} · localStorage gate only (clear

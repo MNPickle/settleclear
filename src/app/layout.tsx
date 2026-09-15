@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SettleClear — Fix Stripe deposits that don’t match QuickBooks",
   description:
-    "Upload a Stripe payout CSV. Get QBO and Xero journal CSVs plus a plain-English explanation of why the deposit is $X. In-browser, USD-first.",
+    "Upload a Stripe payout CSV. Get QBO and Xero journal CSVs plus a plain-English explanation of why the deposit is $X. In-browser, USD-first. A Vetted Stuff product.",
 };
 
 export default function RootLayout({
